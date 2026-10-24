@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HOME EQUITY 708｜セントラル経堂 住宅資産管理ダッシュボード</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#faf6f0; --card:#fffdf9; --ink:#3d3129; --text:#5b5148; --muted:#8a7d70;
+  --line:#eadfd3; --accent:#c26a4b; --accent-soft:#f6e3d8; --accent-deep:#a85537;
+  --loan:#4a6fa5; --loan-soft:#e3ebf5; --pos:#5f8f5a; --pos-soft:#e9f2e4;
+  --neg:#c25b4e; --neg-soft:#f9e7e3; --warn:#b08238; --warn-soft:#faf0da;
+  --info:#8a6fa8; --info-soft:#f0e8f6;
+  --shadow:0 2px 10px rgba(93,70,52,.07), 0 1px 3px rgba(93,70,52,.05);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--text);font-size:15px;line-height:1.75;
+  background-image:radial-gradient(rgba(194,106,75,.045) 1px, transparent 1px);background-size:22px 22px}
+.wrap{max-width:1080px;margin:0 auto;padding:16px 14px 56px}
+header{background:linear-gradient(135deg,#4a3526 0%,#6e4a33 55%,#8a5a3c 100%);color:#fdf9f4;padding:26px 16px 22px;position:relative;overflow:hidden}
+header::after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.06)}
+header .inner{max-width:1080px;margin:0 auto;position:relative;z-index:1}
+header h1{margin:0;font-size:24px;letter-spacing:.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:700}
+header h1 .logo{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);border-radius:12px;padding:3px 12px;font-size:14px;font-weight:700}
+header .sub{margin:6px 0 0;font-size:13.5px;opacity:.9;letter-spacing:.3px}
+/* sticky section nav (追加UI) */
+.secnav{position:sticky;top:0;z-index:50;background:rgba(250,246,240,.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);box-shadow:0 1px 6px rgba(93,70,52,.06)}
+.secnav .inner{max-width:1080px;margin:0 auto;display:flex;gap:6px;overflow-x:auto;padding:8px 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.secnav .inner::-webkit-scrollbar{display:none}
+.secnav a{flex:0 0 auto;text-decoration:none;color:var(--text);font-size:12.5px;font-weight:700;
+  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 14px;transition:.15s}
+.secnav a:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-deep)}
+h2{font-size:17.5px;color:var(--ink);margin:0 0 14px;display:flex;align-items:center;gap:10px;font-weight:700}
+h2::before{content:"";width:6px;height:22px;border-radius:4px;background:linear-gradient(180deg,var(--accent),#d99a7c);flex:0 0 auto}
+section{margin-top:26px;scroll-margin-top:64px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow)}
+.card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:860px){.card-grid{grid-template-columns:repeat(2,1fr)}}
+.stat{border-top:4px solid var(--accent-soft);transition:transform .15s}
+.stat:hover{transform:translateY(-2px)}
+.stat .label{font-size:12.5px;color:var(--muted);font-weight:700}
+.stat .value{font-size:24px;font-weight:700;color:var(--ink);margin:6px 0 4px;word-break:break-all;font-variant-numeric:tabular-nums}
+.stat .value.blue{color:var(--loan)}.stat .value.green{color:var(--pos)}.stat .value.red{color:var(--neg)}
+.stat .note{font-size:11.5px;color:var(--muted);line-height:1.55}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 9px;vertical-align:middle;margin-left:6px;letter-spacing:.3px}
+.badge.actual{background:var(--accent-soft);color:var(--accent-deep)}
+.badge.estimate{background:var(--warn-soft);color:var(--warn)}
+.badge.forecast{background:var(--info-soft);color:var(--info)}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;padding:10px 18px;font-size:14px;cursor:pointer;font-weight:700;min-height:42px;transition:.15s;font-family:inherit}
+.btn:hover{background:var(--accent-soft);border-color:#e6c3b0}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-deep));border-color:var(--accent-deep);color:#fff;box-shadow:0 2px 8px rgba(194,106,75,.35)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.danger{color:var(--neg);border-color:#ecccc4;background:#fdf7f5}
+.btn.danger:hover{background:var(--neg-soft)}
+.btn.small{padding:5px 12px;font-size:12.5px;min-height:32px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card);box-shadow:var(--shadow)}
+.seg button{border:0;background:transparent;padding:9px 16px;font-size:13.5px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;min-height:42px;font-family:inherit;transition:.15s}
+.seg button.active{background:linear-gradient(135deg,var(--accent),var(--accent-deep));color:#fff}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.chart-box{position:relative;height:380px}
+@media(max-width:640px){.chart-box{height:300px}}
+.note{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.7}
+.note.warn{color:var(--warn);background:var(--warn-soft);border-radius:12px;padding:10px 14px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:700;font-size:12px;background:#f7f1e8}
+td.num{font-variant-numeric:tabular-nums}
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+tr.paid td{background:var(--pos-soft)}
+.pos{color:var(--pos);font-weight:700}.neg{color:var(--neg);font-weight:700}
+form .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:135px;flex:1}
+.field label{font-size:11.5px;color:var(--muted);font-weight:700;letter-spacing:.3px}
+input,select{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:16px;font-family:inherit;background:#fffefb;color:var(--text);width:100%;min-height:44px;transition:border-color .15s}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 10px}
+.tag.kijou{background:#e3ecf5;color:#4a6fa5}.tag.mondan{background:var(--warn-soft);color:var(--warn)}
+.tag.uchidashi{background:var(--info-soft);color:var(--info)}.tag.seiyaku{background:var(--pos-soft);color:var(--pos)}
+.detail-panel{margin-top:14px;background:#faf3ea;border:1.5px dashed #d9c3ae;border-radius:14px;padding:14px;font-size:13.5px;display:none}
+.detail-panel.show{display:block}
+.detail-panel .dp-title{font-weight:700;color:var(--ink);margin-bottom:8px}
+.detail-panel table td,.detail-panel table th{border-bottom:1px solid var(--line);background:transparent}
+ul.log{list-style:none;margin:0;padding:0;font-size:12.5px;max-height:230px;overflow-y:auto}
+ul.log li{padding:7px 6px;border-bottom:1px dashed var(--line);color:var(--muted)}
+ul.log li b{color:var(--ink)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:860px){.grid2{grid-template-columns:1fr}}
+.prop-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;font-size:13.5px}
+.prop-list div{background:#f7f1e8;border-radius:12px;padding:10px 12px}
+.prop-list b{display:block;font-size:11px;color:var(--muted);font-weight:700}
+footer{margin-top:32px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;line-height:1.8}
+footer b{color:var(--ink)}
+.remind-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
+.remind-item .r-label{font-weight:700;color:var(--ink);min-width:200px}
+.status{font-size:11.5px;font-weight:700;border-radius:999px;padding:4px 12px}
+.status.ok{background:var(--pos-soft);color:var(--pos)}
+.status.due{background:var(--warn-soft);color:var(--warn)}
+.status.over{background:var(--neg-soft);color:var(--neg)}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--pos);min-height:0}
+.check-cell{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+@media(max-width:640px){
+  body{font-size:14.5px}
+  .stat .value{font-size:21px}
+  header{padding:20px 14px 18px}
+  header h1{font-size:20px}
+  .card{padding:14px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="inner">
+    <h1><span class="logo">🏠</span>HOME EQUITY 708</h1>
+    <p class="sub">セントラル経堂｜住宅資産管理ダッシュボード</p>
+  </div>
+</header>
+<nav class="secnav"><div class="inner">
+<a href="#sec-dash">📊 ダッシュボード</a><a href="#sec-chart">📈 グラフ</a><a href="#sec-pay">✅ 返済管理</a><a href="#sec-rate">💱 金利変更</a><a href="#sec-appr">🏠 査定履歴</a><a href="#sec-sim">💰 売却シミュレーション</a><a href="#sec-fee">🔧 維持費</a><a href="#sec-remind">🔔 リマインド</a><a href="#sec-info">🏠 物件情報</a><a href="#sec-data">💾 データ管理</a>
+</div></nav>
+<div class="wrap">
+
+  <section>
+    <section id="sec-dash">
+    <h2>住宅資産ダッシュボード</h2>
+    <div class="card-grid">
+      <div class="card stat">
+        <div class="label">① 毎月の住居費<span class="badge actual">実績値</span></div>
+        <div class="value" id="card1">—</div>
+        <div class="note" id="card1note"></div>
+      </div>
+      <div class="card stat">
+        <div class="label">② 現在の住宅ローン残高<span class="badge actual" id="card2badge">実績値</span></div>
+        <div class="value blue" id="card2">—</div>
+        <div class="note" id="card2note"></div>
+      </div>
+      <div class="card stat">
+        <div class="label">③ 2036年の予想ローン残高<span class="badge forecast">将来予測値</span></div>
+        <div class="value blue" id="card3">—</div>
+        <div class="note">2036年6月返済後（標準金利シナリオ）</div>
+      </div>
+      <div class="card stat">
+        <div class="label">④ 2036年の売却時手残り<span class="badge forecast">将来予測値</span></div>
+        <div class="value green" id="card4">—</div>
+        <div class="note" id="card4note"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <section id="sec-chart">
+    <h2>ローン残高 × 不動産価値 比較グラフ</h2>
+    <div class="card">
+      <div class="toolbar">
+        <div class="seg" id="periodSeg">
+          <button data-period="10" class="active">10年</button>
+          <button data-period="20">20年</button>
+          <button data-period="35">35年</button>
+        </div>
+        <div class="seg" id="scenarioSeg">
+          <button data-rate="-0.02">慎重（年−2%）</button>
+          <button data-rate="0" class="active">標準（年±0%）</button>
+          <button data-rate="0.02">強気（年+2%）</button>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="mainChart"></canvas></div>
+      <div class="note">青線：住宅ローン残高（合計）／緑線：推定不動産売却価格。グラフの点を<b>タップ・ホバー</b>すると詳細が表示されます。</div>
+      <div class="note warn" id="uncertainNote" style="display:none">⚠ 20年〜35年後の不動産価格は不確実性が非常に高い参考値です。金利（変動）・修繕・市況により大きく変動し得ます。</div>
+      <div class="detail-panel" id="chartDetail"></div>
+    </div>
+  </section>
+
+  <section>
+    <section id="sec-pay">
+    <h2>毎月の返済管理</h2>
+    <div class="card">
+      <div class="note" style="margin-top:0">各月の返済後にチェックしてください（確認済み＝緑色）。実際の銀行残高を入力すると、その月以降の残高予測が実績ベースで再計算されます。</div>
+      <div class="table-scroll" style="max-height:360px;overflow-y:auto;margin-top:10px">
+        <table id="payTable">
+          <thead><tr>
+            <th>返済月</th><th>さやか 返済額</th><th>確認</th><th>実績残高(円)</th>
+            <th>りゅうせい 返済額</th><th>確認</th><th>実績残高(円)</th>
+          </tr></thead>
+          <tbody id="payBody"></tbody>
+        </table>
+      </div>
+      <div class="note" id="paySummary"></div>
+    </div>
+  </section>
+
+  <section>
+    <section id="sec-rate">
+    <h2>金利変更管理</h2>
+    <div class="card">
+      <form id="rateForm">
+        <div class="row">
+          <div class="field"><label>対象ローン</label>
+            <select id="rfLoan"><option value="A">さやか（6,410万円）</option><option value="B">りゅうせい（2,990万円）</option></select>
+          </div>
+          <div class="field"><label>適用年月（この月の返済から）</label><input type="month" id="rfYm" value="2027-04" min="2026-07" max="2061-07"></div>
+          <div class="field"><label>新金利（年%）</label><input type="number" id="rfRate" step="0.001" min="0" max="10" value="1.000"></div>
+          <div class="field"><label>新月返済額（円・空欄なら自動再計算）</label><input type="number" id="rfPay" placeholder="自動計算"></div>
+        </div>
+        <button type="submit" class="btn primary">金利変更を記録</button>
+      </form>
+      <div class="table-scroll" style="margin-top:12px">
+        <table><thead><tr><th>ローン</th><th>適用年月</th><th>新金利</th><th>新月返済額</th><th>操作</th></tr></thead>
+        <tbody id="rateBody"></tbody></table>
+      </div>
+      <div class="note">金利変更を記録すると、グラフ・残高予測・売却シミュレーションがすべて再計算されます。</div>
+    </div>
+  </section>
+
+  <section>
+    <section id="sec-appr">
+    <h2>不動産査定履歴</h2>
+    <div class="card">
+      <form id="apprForm">
+        <div class="row">
+          <div class="field"><label>査定日</label><input type="date" id="apDate" required></div>
+          <div class="field"><label>区分</label>
+            <select id="apType">
+              <option value="kijou">机上査定</option><option value="mondan">訪問査定</option>
+              <option value="uchidashi">売出価格</option><option value="seiyaku">成約価格</option>
+            </select>
+          </div>
+          <div class="field"><label>価格（円）</label><input type="number" id="apPrice" step="10000" min="0" required></div>
+          <div class="field"><label>メモ（任意）</label><input type="text" id="apNote" placeholder="例：不動産ポータル概算"></div>
+        </div>
+        <button type="submit" class="btn primary">査定履歴を追加</button>
+      </form>
+      <div class="note" id="apprBaseNote" style="margin-top:10px"></div>
+      <div class="table-scroll" style="margin-top:8px">
+        <table><thead><tr><th>査定日</th><th>区分</th><th>価格</th><th>基準</th><th>メモ</th><th>操作</th></tr></thead>
+        <tbody id="apprBody"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <section id="sec-sim">
+    <h2>売却シミュレーション</h2>
+    <div class="card">
+      <div class="row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div class="field" style="max-width:160px"><label>売却想定年</label><select id="simYear"></select></div>
+        <div class="field" style="max-width:220px"><label>想定売却価格（円）</label><input type="number" id="simPrice" step="100000" value="82000000"></div>
+        <button class="btn small" data-simprice="70000000">7,000万円</button>
+        <button class="btn small" data-simprice="82000000">8,200万円</button>
+        <button class="btn small" data-simprice="90000000">9,000万円</button>
+      </div>
+      <div class="table-scroll" style="margin-top:12px">
+        <table id="simTable"><tbody id="simBody"></tbody></table>
+      </div>
+      <div class="note">実質住居コスト ＝ 購入から売却までの総住居支出（ローン返済＋管理費＋修繕積立金＋固定資産税）− 売却手残り。譲渡所得税（居住用財産の3,000万円控除等）は考慮していません。</div>
+    </div>
+  </section>
+
+  <section>
+    <section id="sec-fee">
+    <h2>維持費管理</h2>
+    <div class="card">
+      <form id="feeForm">
+        <div class="row">
+          <div class="field"><label>管理費（円/月）</label><input type="number" id="feeMgmt" step="10"></div>
+          <div class="field"><label>修繕積立金（円/月）</label><input type="number" id="feeRepair" step="10"></div>
+          <div class="field"><label>固定資産税（円/年）</label><input type="number" id="feeTax" step="100"></div>
+        </div>
+        <button type="submit" class="btn primary">維持費を更新</button>
+      </form>
+      <div class="table-scroll" style="margin-top:12px">
+        <table id="feeTable"><tbody id="feeBody"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <section id="sec-remind">
+    <h2>更新リマインド</h2>
+    <div class="card" id="remindCard"></div>
+  </section>
+
+  <section>
+    <section id="sec-info">
+    <h2>物件情報</h2>
+    <div class="card">
+      <div class="prop-list" id="propInfo"></div>
+      <div class="grid2" style="margin-top:12px">
+        <div>
+          <div class="note" style="margin-top:0"><b>ペアローン①：さやか</b>（借入時25歳）SBI新生銀行／借入 6,410万円／2026年5月29日借入（初回返済 2026年7月27日）／年0.930% 変動／35年・420回</div>
+          <div class="note"><b>ペアローン②：りゅうせい</b>（借入時25歳）SBI新生銀行／借入 2,990万円／同上条件</div>
+        </div>
+        <div>
+          <div class="note" style="margin-top:0">借入合計 <b>9,400万円</b>／月返済合計 <b>262,292円</b>（元利均等・年0.930%で再計算した値を表示）</div>
+          <div class="note">想定保有期間：10年（2036年住み替え想定）／グラフ・予測はすべて元利均等返済により動的に計算しています。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <section id="sec-data">
+    <h2>データ管理・更新ログ</h2>
+    <div class="card">
+      <div class="toolbar">
+        <button class="btn" id="btnExport">📤 JSONエクスポート</button>
+        <label class="btn" style="display:inline-block">📥 JSONインポート<input type="file" id="fileImport" accept=".json" style="display:none"></label>
+        <button class="btn danger" id="btnReset">初期化</button>
+        <span class="note" id="saveNote"></span>
+      </div>
+      <div class="note warn" style="margin-top:10px">ℹ️ このHTML単体ファイルでは、データは<b>このブラウザのlocalStorage</b>に保存されます（端末・ブラウザごとに独立）。複数アカウントでのリアルタイム同期・アクセス権限管理を行うには、Supabase / Firebase などのバックエンドを追加し、このJSON構造をそのままテーブルに移行してください。現バージョンでは <b>JSONエクスポート／インポート</b> による手動同期と、下記の更新ログで共有履歴を管理できます。</div>
+      <ul class="log" id="logList"></ul>
+    </div>
+  </section>
+
+  <footer>
+    <b>HOME EQUITY 708</b> — セントラル経堂｜住宅資産管理ダッシュボード<br>
+    計算：元利均等返済（月賦）。表示値は四捨五入のため仕様値と±1円程度差異があります。将来予測は金利・市況により変動します。
+  </footer>
+</div>
+
+
+<script>
+'use strict';
+/* ============================================================
+   HOME EQUITY 708 — ロジック
+   計算方針：元利均等返済（月賦）。すべての数値をマスターデータから導出。
+   ※ 仕様記載の「2036年約7,019万円」は本計算（年0.930%・420回）と一致: 70,185,858円
+   ※ 仕様記載の「売却手残り約894万円」は売却費用の前提が不明のため、
+     本計算では「仲介手数料 3%+6万円＋消費税10%（編集可能）」で算出 → 約904万円。
+     売却費用は「売却シミュレーション」の設定で変更できます。
+   ============================================================ */
+
+const LS_KEY = 'he708_state_v1';
+const FIRST_PAY_YM = '2026-07';
+const LOAN_MONTHS = 420;
+
+const DEFAULT_STATE = {
+  property: {
+    name:'セントラル経堂', room:'708', addr:'東京都世田谷区経堂1丁目',
+    built:'1976年11月', area:70.66, layout:'2LDK', buyYear:2026,
+    buyPrice:87800000, buyCost:6200000, appraisalBase:82000000, holdYears:10
+  },
+  loans: [
+    { id:'A', name:'さやか',   age:25, bank:'SBI新生銀行', principal:64100000, firstPay:'2026-07-27', rate:0.0093, months:420, pay:178861 },
+    { id:'B', name:'りゅうせい', age:25, bank:'SBI新生銀行', principal:29900000, firstPay:'2026-07-27', rate:0.0093, months:420, pay:83431 }
+  ],
+  fees: { mgmt:14930, repair:21200, taxYear:134000 },
+  saleCosts: { brokerPct:3, brokerFixed:60000, taxRate:10, other:0 }, // %, 円, %
+  appraisalHistory: [
+    { date:'2026-10-01', type:'kijou', price:82000000, note:'初期値（概算・机上）', base:true }
+  ],
+  rateChanges: [],
+  payments: {},          // "A_2026-10": {checked:bool, actual:number|null}
+  logs: []
+};
+
+let state = load();
+let mainChart = null;
+let curPeriod = 10, curRate = 0; // 年率シナリオ
+
+/* ---------- ユーティリティ ---------- */
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){ return Object.assign(structuredClone(DEFAULT_STATE), JSON.parse(raw)); }
+  }catch(e){ console.warn(e); }
+  return structuredClone(DEFAULT_STATE);
+}
+function save(silent){
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
+  if(!silent) document.getElementById('saveNote').textContent = '保存済み ✓ ' + new Date().toLocaleTimeString('ja-JP');
+}
+function log(msg){
+  state.logs.unshift({ ts:new Date().toISOString(), msg });
+  if(state.logs.length>100) state.logs.length = 100;
+}
+const fmt = n => (n==null||isNaN(n)) ? '—' : Math.round(n).toLocaleString('ja-JP');
+const fmtMan = n => (n==null||isNaN(n)) ? '—' : (n/10000).toLocaleString('ja-JP',{maximumFractionDigits:1}) + '万円';
+function ymKey(date){ return date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0'); }
+function addMonths(ym, n){ const [y,m]=ym.split('-').map(Number); const d=new Date(y, m-1+n, 1); return ymKey(d); }
+function ymDiff(a,b){ const [ay,am]=a.split('-').map(Number),[by,bm]=b.split('-').map(Number); return (ay-by)*12+(am-bm); }
+function ymJp(ym){ const [y,m]=ym.split('-').map(Number); return `${y}年${m}月`; }
+function annuity(P, r, n){ if(n<=0) return 0; const m=r/12; return P*m*(1+m)**n/((1+m)**n-1); }
+
+/* ---------- 返済シミュレーション（月次ループ） ---------- */
+function projectLoan(loan){
+  const changes = state.rateChanges.filter(c=>c.loanId===loan.id).sort((a,b)=>a.ym<b.ym?-1:1);
+  const pays = {}; // "A_2026-10" 形式
+  Object.keys(state.payments).forEach(k=>{ if(k.startsWith(loan.id+'_')) pays[k.split('_')[1]] = state.payments[k]; });
+  let bal = loan.principal, rate = loan.rate, pay = loan.pay, totalPaid = 0;
+  const out = { bal:{}, pay:{}, cum:{}, rate:{} };
+  for(let i=0;i<loan.months;i++){
+    const y = addMonths(FIRST_PAY_YM, i);
+    const ch = changes.find(c=>c.ym===y);
+    if(ch){
+      rate = ch.rate/100;
+      pay = ch.pay ? ch.pay : Math.round(annuity(bal, rate, loan.months - i));
+    }
+    bal = bal*(1+rate/12) - pay;
+    if(bal < 0) bal = 0;
+    totalPaid += pay;
+    const pr = pays[y];
+    if(pr && pr.actual != null && pr.actual !== '' && !isNaN(pr.actual)) bal = Math.max(0, Number(pr.actual));
+    out.bal[y]=bal; out.pay[y]=pay; out.cum[y]=totalPaid; out.rate[y]=rate;
+    if(bal<=0){
+      for(let j=i+1;j<loan.months;j++){ const y2=addMonths(FIRST_PAY_YM,j); out.bal[y2]=0; out.pay[y2]=0; out.cum[y2]=totalPaid; out.rate[y2]=rate; }
+      break;
+    }
+  }
+  return out;
+}
+function basePrice(){
+  const list = state.appraisalHistory.filter(a=>a.base);
+  return list.length ? list[0].price : state.property.appraisalBase;
+}
+function saleCosts(price){
+  const s = state.saleCosts;
+  const broker = price*s.brokerPct/100 + s.brokerFixed;
+  const brokerTax = broker*s.taxRate/100;
+  return { broker, brokerTax, other:s.other||0, total: broker+brokerTax+(s.other||0) };
+}
+
+/* ---------- レンダリング ---------- */
+function render(){
+  const PA = projectLoan(state.loans[0]);
+  const PB = projectLoan(state.loans[1]);
+  const todayYm = ymKey(new Date());
+  const lastYm = addMonths(FIRST_PAY_YM, LOAN_MONTHS-1);
+
+  // 現在の残高（直近の実績入力があればそれを優先）
+  let curBalA = state.loans[0].principal, curBalB = state.loans[1].principal, actualUsed = false, anchor = FIRST_PAY_YM;
+  for(let y=FIRST_PAY_YM; ymDiff(y, todayYm)<=0 && ymDiff(y,lastYm)<=0; y=addMonths(y,1)){
+    curBalA = PA.bal[y]; curBalB = PB.bal[y]; anchor = y;
+    const pa = state.payments['A_'+y], pb = state.payments['B_'+y];
+    if((pa&&pa.actual)||(pb&&pb.actual)) actualUsed = true;
+  }
+  const curBal = curBalA + curBalB;
+
+  // カード①毎月の住居費
+  const curPay = (PA.pay[todayYm]||0) + (PB.pay[todayYm]||0);
+  const monthlyHousing = curPay + state.fees.mgmt + state.fees.repair + state.fees.taxYear/12;
+  document.getElementById('card1').textContent = '¥' + fmt(monthlyHousing);
+  document.getElementById('card1note').textContent = `返済 ${fmt(curPay)}＋管理費 ${fmt(state.fees.mgmt)}＋修繕 ${fmt(state.fees.repair)}＋固定資産税 ${fmt(state.fees.taxYear/12)}`;
+
+  // カード②現在の残高
+  const card2 = document.getElementById('card2');
+  card2.textContent = '¥' + fmt(curBal);
+  card2.className = 'value blue';
+  document.getElementById('card2badge').textContent = actualUsed ? '実績値ベース' : '計算上の推定値';
+  document.getElementById('card2note').textContent = `さやか ${fmt(curBalA)}／りゅうせい ${fmt(curBalB)}（${ymJp(anchor)}返済後）`;
+
+  // カード③2036年残高 / カード④売却手残り
+  const y2036 = '2036-06';
+  const bal2036 = PA.bal[y2036] + PB.bal[y2036];
+  document.getElementById('card3').textContent = '¥' + fmt(bal2036);
+  const price2036 = basePrice(); // 標準シナリオ（±0%）では基準額のまま
+  const sc = saleCosts(price2036);
+  const remain2036 = price2036 - bal2036 - sc.total;
+  const c4 = document.getElementById('card4');
+  c4.textContent = '¥' + fmt(remain2036);
+  c4.className = remain2036 >= 0 ? 'value green' : 'value red';
+  document.getElementById('card4note').textContent = `8,200万円売却仮定・売却費用 ${fmt(sc.total)}円（仲介${state.saleCosts.brokerPct}%＋6万円＋税）`;
+
+  renderChart(PA, PB, todayYm);
+  renderPayments(PA, PB);
+  renderRateTable();
+  renderAppraisal();
+  renderSim(PA, PB);
+  renderFees();
+  renderReminders();
+  renderLogs();
+  renderPropInfo(curBal, monthlyHousing);
+}
+
+/* ---------- グラフ ---------- */
+function renderChart(PA, PB, todayYm){
+  const n = curPeriod===35 ? LOAN_MONTHS : curPeriod*12+1;
+  const labels=[], loanData=[], propData=[];
+  const base = basePrice(), g = curRate;
+  for(let i=0;i<n;i++){
+    const y = addMonths(FIRST_PAY_YM, i);
+    labels.push(ymJp(y));
+    loanData.push(Math.round((PA.bal[y]||0)+(PB.bal[y]||0)));
+    propData.push(Math.round(base*Math.pow(1+g, ymDiff(y, todayYm)/12)));
+  }
+  document.getElementById('uncertainNote').style.display = curPeriod>=20 ? 'block':'none';
+  const ctx = document.getElementById('mainChart');
+  const cfg = {
+    type:'line',
+    data:{ labels, datasets:[
+      { label:'住宅ローン残高（合計）', data:loanData, borderColor:'#4a6fa5', backgroundColor:'rgba(74,111,165,.10)', fill:true, tension:.25, pointRadius:0, pointHitRadius:12, borderWidth:2.5 },
+      { label:'推定不動産売却価格', data:propData, borderColor:'#5f8f5a', backgroundColor:'rgba(95,143,90,.10)', fill:true, tension:.25, pointRadius:0, pointHitRadius:12, borderWidth:2.5 }
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false, interaction:{ mode:'nearest', axis:'x', intersect:false },
+      plugins:{
+        legend:{ labels:{ font:{ size:12 }, boxWidth:24 } },
+        tooltip:{
+          backgroundColor:'#3d3129', titleFont:{size:13}, bodyFont:{size:12}, padding:10, displayColors:true,
+          callbacks:{
+            title: it => it[0].label,
+            label: it => `${it.dataset.label}: ${fmt(it.parsed.y)}円`
+          }
+        }
+      },
+      scales:{
+        x:{ ticks:{ maxTicksLimit: curPeriod===10?10:8, font:{size:10}, autoSkip:true, callback:function(v,i){ return labels[i]; } }, grid:{ display:false } },
+        y:{ ticks:{ font:{size:11}, callback: v => (v/10000).toLocaleString('ja-JP')+'万' }, grid:{ color:'#f0e6da' } }
+      },
+      onClick(evt, els, chart){
+        if(!els.length) return;
+        showChartDetail(els[0].index, PA, PB, todayYm);
+      }
+    }
+  };
+  if(mainChart){ mainChart.data = cfg.data; mainChart.options = cfg.options; mainChart.update(); }
+  else mainChart = new Chart(ctx, cfg);
+}
+function showChartDetail(i, PA, PB, todayYm){
+  const y = addMonths(FIRST_PAY_YM, i);
+  const a = PA.bal[y]||0, b = PB.bal[y]||0, total = a+b;
+  const base = basePrice(), g = curRate;
+  const price = base*Math.pow(1+g, ymDiff(y, todayYm)/12);
+  const eq = price - total, sc = saleCosts(price), remain = price - total - sc.total;
+  const dp = document.getElementById('chartDetail');
+  dp.classList.add('show');
+  dp.innerHTML = `<div class="dp-title">📅 ${ymJp(y)} の詳細（シナリオ：${curRate>0?'強気 +2%':curRate<0?'慎重 −2%':'標準 ±0%'}）</div>
+  <div class="table-scroll"><table>
+    <tr><th>さやかの残高</th><td class="num">${fmt(a)}円</td></tr>
+    <tr><th>りゅうせいの残高</th><td class="num">${fmt(b)}円</td></tr>
+    <tr><th>ローン残高 合計</th><td class="num neg">${fmt(total)}円</td></tr>
+    <tr><th>不動産推定価値</th><td class="num">${fmt(price)}円</td></tr>
+    <tr><th>住宅純資産額（価値−残高）</th><td class="num ${eq>=0?'pos':'neg'}">${fmt(eq)}円</td></tr>
+    <tr><th>売却費用（仲介 ${state.saleCosts.brokerPct}%＋6万円＋消費税${state.saleCosts.taxRate}%）</th><td class="num">−${fmt(sc.total)}円</td></tr>
+    <tr><th><b>推定売却手残り</b></th><td class="num ${remain>=0?'pos':'neg'}"><b>${fmt(remain)}円</b></td></tr>
+  </table></div>`;
+  dp.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+/* ---------- 毎月の返済管理 ---------- */
+function renderPayments(PA, PB){
+  const today = new Date(); today.setDate(1);
+  let start = new Date(today); start.setMonth(start.getMonth()-6);
+  let startKey = ymKey(start);
+  if(ymDiff(startKey, FIRST_PAY_YM)<0) startKey = FIRST_PAY_YM;
+  const rows = [];
+  for(let i=0;i<13;i++){
+    const y = addMonths(startKey, i);
+    const isFuture = ymDiff(y, ymKey(new Date()))>0;
+    rows.push(`<tr ${rowClass(y)}>
+      <td>${ymJp(y)}${isFuture?' <span style="font-size:10px;color:#94a3b8">(予定)</span>':''}</td>
+      <td class="num">${fmt(PA.pay[y])}</td>
+      <td><div class="check-cell"><input type="checkbox" data-pk="A_${y}" ${chk('A',y)}></div></td>
+      <td><input type="number" class="act" data-ak="A_${y}" value="${actVal('A',y)}" placeholder="任意" style="width:120px;text-align:right"></td>
+      <td class="num">${fmt(PB.pay[y])}</td>
+      <td><div class="check-cell"><input type="checkbox" data-pk="B_${y}" ${chk('B',y)}></div></td>
+      <td><input type="number" class="act" data-ak="B_${y}" value="${actVal('B',y)}" placeholder="任意" style="width:120px;text-align:right"></td>
+    </tr>`);
+  }
+  function rowClass(y){
+    const a = state.payments['A_'+y], b = state.payments['B_'+y];
+    return (a&&a.checked&&b&&b.checked) ? 'class="paid"' : '';
+  }
+  function chk(id,y){ const p=state.payments[id+'_'+y]; return p&&p.checked?'checked':''; }
+  function actVal(id,y){ const p=state.payments[id+'_'+y]; return (p&&p.actual)?p.actual:''; }
+  document.getElementById('payBody').innerHTML = rows.join('');
+  const done = Object.values(state.payments).filter(p=>p.checked).length;
+  document.getElementById('paySummary').textContent = `✅ 確認済み ${done} 件／実績残高入力あり ${Object.values(state.payments).filter(p=>p.actual).length} 件。実績残高を入力すると以降の予測が再計算されます。`;
+  document.querySelectorAll('#payBody input[type=checkbox]').forEach(el=>{
+    el.addEventListener('change', e=>{
+      const k = e.target.dataset.pk;
+      state.payments[k] = state.payments[k]||{};
+      state.payments[k].checked = e.target.checked;
+      log(`返済確認：${k.replace('_',' ')} を${e.target.checked?'確認済みに':'未確認に'}変更`);
+      save(); render();
+    });
+  });
+  document.querySelectorAll('#payBody input.act').forEach(el=>{
+    el.addEventListener('change', e=>{
+      const k = e.target.dataset.ak;
+      state.payments[k] = state.payments[k]||{};
+      state.payments[k].actual = e.target.value ? Number(e.target.value) : null;
+      if(e.target.value) log(`実績残高入力：${k.replace('_',' ')} = ${fmt(e.target.value)}円（以降の予測を再計算）`);
+      save(); render();
+    });
+  });
+}
+
+/* ---------- 金利変更管理 ---------- */
+function renderRateTable(){
+  const tb = document.getElementById('rateBody');
+  tb.innerHTML = state.rateChanges.length===0
+    ? '<tr><td colspan="5" style="text-align:center;color:#94a3b8">記録なし</td></tr>'
+    : state.rateChanges.map((c,i)=>{
+        const ln = state.loans.find(l=>l.id===c.loanId);
+        return `<tr><td>${ln?ln.name:'—'}</td><td>${ymJp(c.ym)}</td><td class="num">年${c.rate.toFixed(3)}%</td>
+        <td class="num">${c.pay?fmt(c.pay)+'円':'自動再計算'}</td>
+        <td><button class="btn small danger" data-rdel="${i}">削除</button></td></tr>`;
+      }).join('');
+  tb.querySelectorAll('[data-rdel]').forEach(b=>b.addEventListener('click',()=>{
+    const c = state.rateChanges.splice(Number(b.dataset.rdel),1)[0];
+    log(`金利変更を削除：${c.loanId} ${c.ym} 年${c.rate}%`);
+    save(); render();
+  }));
+}
+document.getElementById('rateForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const loanId = document.getElementById('rfLoan').value;
+  const ym = document.getElementById('rfYm').value;
+  const rate = Number(document.getElementById('rfRate').value);
+  const pay = document.getElementById('rfPay').value ? Number(document.getElementById('rfPay').value) : null;
+  if(!ym || isNaN(rate)) return;
+  if(ymDiff(ym, FIRST_PAY_YM)<0 || ymDiff(ym, addMonths(FIRST_PAY_YM, LOAN_MONTHS-1))>0){ alert('適用年月は返済期間（2026年7月〜2061年6月）内で指定してください。'); return; }
+  state.rateChanges.push({ loanId, ym, rate, pay });
+  log(`金利変更を記録：${loanId==='A'?'さやか':'りゅうせい'} ${ymJp(ym)}から 年${rate.toFixed(3)}%（新月返済 ${pay?fmt(pay)+'円':'自動再計算'}）`);
+  save(); render();
+});
+
+/* ---------- 不動産査定履歴 ---------- */
+const APPTYPE = { kijou:['机上査定','tag kijou'], mondan:['訪問査定','tag mondan'], uchidashi:['売出価格','tag uchidashi'], seiyaku:['成約価格','tag seiyaku'] };
+function renderAppraisal(){
+  const list = state.appraisalHistory.slice().sort((a,b)=>a.date<b.date?1:-1);
+  const tb = document.getElementById('apprBody');
+  tb.innerHTML = list.length===0 ? '<tr><td colspan="6" style="text-align:center;color:#94a3b8">記録なし</td></tr>'
+    : list.map((a,i)=>{
+        const idx = state.appraisalHistory.indexOf(a);
+        const [label,cls] = APPTYPE[a.type]||['—',''];
+        return `<tr><td>${a.date}</td><td><span class="${cls}">${label}</span></td>
+          <td class="num">${fmt(a.price)}円</td>
+          <td><input type="radio" name="apBase" ${a.base?'checked':''} data-abase="${idx}"></td>
+          <td style="white-space:normal;min-width:120px">${a.note||''}</td>
+          <td><button class="btn small danger" data-adel="${idx}">削除</button></td></tr>`;
+      }).join('');
+  document.getElementById('apprBaseNote').innerHTML = `📊 グラフ基準額：<b>${fmt(basePrice())}円</b>（「基準」列のラジオボタンで切り替え）`;
+  tb.querySelectorAll('[data-adel]').forEach(b=>b.addEventListener('click',()=>{
+    const a = state.appraisalHistory.splice(Number(b.dataset.adel),1)[0];
+    if(a.base && state.appraisalHistory.length) state.appraisalHistory[0].base = true;
+    log(`査定履歴を削除：${a.date} ${fmt(a.price)}円`);
+    save(); render();
+  }));
+  tb.querySelectorAll('[data-abase]').forEach(r=>r.addEventListener('change',()=>{
+    state.appraisalHistory.forEach((a,i)=>a.base = (i===Number(r.dataset.abase)));
+    log(`グラフ基準額を ${fmt(basePrice())}円 に変更`);
+    save(); render();
+  }));
+}
+document.getElementById('apprForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const rec = { date:document.getElementById('apDate').value, type:document.getElementById('apType').value,
+    price:Number(document.getElementById('apPrice').value), note:document.getElementById('apNote').value, base:false };
+  if(!rec.date || !rec.price) return;
+  state.appraisalHistory.push(rec);
+  log(`査定履歴を追加：${rec.date} ${APPTYPE[rec.type][0]} ${fmt(rec.price)}円`);
+  save(); render();
+  document.getElementById('apPrice').value=''; document.getElementById('apNote').value='';
+});
+
+/* ---------- 売却シミュレーション ---------- */
+function renderSim(PA, PB){
+  const sel = document.getElementById('simYear');
+  if(!sel.options.length){
+    for(let y=2027; y<=2061; y++){ const o=document.createElement('option'); o.value=y; o.textContent=`${y}年`; sel.appendChild(o); }
+    sel.value = '2036';
+  }
+  const yr = sel.value || '2036';
+  const y = yr + '-06';
+  const price = Number(document.getElementById('simPrice').value)||0;
+  const bal = (PA.bal[y]||0)+(PB.bal[y]||0);
+  const sc = saleCosts(price);
+  const remain = price - bal - sc.total;
+  const monthsHeld = ymDiff(y, FIRST_PAY_YM);
+  const yearsHeld = Math.ceil(monthsHeld/12);
+  const totalPaidLoan = (PA.cum[y]||0)+(PB.cum[y]||0);
+  const maint = monthsHeld*(state.fees.mgmt+state.fees.repair) + (yearsHeld+1)*state.fees.taxYear;
+  const realCost = totalPaidLoan + maint - remain;
+  const eq = price - bal;
+  const rows = [
+    ['想定売却価格（'+yr+'年6月時点）', fmt(price)+'円', ''],
+    ['ローン残高合計（'+yr+'年6月返済後）', '−'+fmt(bal)+'円', 'neg'],
+    ['住宅純資産額（価格−残高）', fmt(eq)+'円', eq>=0?'pos':'neg'],
+    ['仲介手数料（'+state.saleCosts.brokerPct+'%＋6万円）', '−'+fmt(sc.broker)+'円', ''],
+    ['仲介手数料 消費税（'+state.saleCosts.taxRate+'%）', '−'+fmt(sc.brokerTax)+'円', ''],
+    ['その他売却費用（設定可能）', sc.other?'−'+fmt(sc.other)+'円':'0円', ''],
+    ['売却時手残り（価格−残高−売却費用）', fmt(remain)+'円', remain>=0?'pos':'neg'],
+    ['保有期間中のローン返済総額', fmt(totalPaidLoan)+'円', ''],
+    ['維持費総額（管理費＋修繕＋固定資産税）', fmt(maint)+'円', ''],
+    ['実質住居コスト（総支出−手残り）', fmt(realCost)+'円／月平均 '+fmt(realCost/Math.max(monthsHeld,1)), '']
+  ];
+  document.getElementById('simBody').innerHTML = rows.map((r,i)=>
+    `<tr ${i===6||i===9?'style="background:#f0fdf4"':''}><th style="background:transparent;text-align:left">${r[0]}</th><td class="num ${r[2]}">${r[1]}</td></tr>`).join('');
+}
+document.getElementById('simYear').addEventListener('change', render);
+document.getElementById('simPrice').addEventListener('input', render);
+document.querySelectorAll('[data-simprice]').forEach(b=>b.addEventListener('click',()=>{
+  document.getElementById('simPrice').value = b.dataset.simprice; render();
+}));
+
+/* ---------- 維持費管理 ---------- */
+function renderFees(){
+  document.getElementById('feeMgmt').value = state.fees.mgmt;
+  document.getElementById('feeRepair').value = state.fees.repair;
+  document.getElementById('feeTax').value = state.fees.taxYear;
+  const monthlyMaint = state.fees.mgmt + state.fees.repair + state.fees.taxYear/12;
+  document.getElementById('feeBody').innerHTML = `
+    <tr><th>管理費</th><td class="num">${fmt(state.fees.mgmt)}円／月</td></tr>
+    <tr><th>修繕積立金</th><td class="num">${fmt(state.fees.repair)}円／月</td></tr>
+    <tr><th>固定資産税</th><td class="num">${fmt(state.fees.taxYear)}円／年（月換算 ${fmt(state.fees.taxYear/12)}円）</td></tr>
+    <tr><th>維持費 合計</th><td class="num">${fmt(monthlyMaint)}円／月</td></tr>`;
+}
+document.getElementById('feeForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  state.fees.mgmt = Number(document.getElementById('feeMgmt').value)||0;
+  state.fees.repair = Number(document.getElementById('feeRepair').value)||0;
+  state.fees.taxYear = Number(document.getElementById('feeTax').value)||0;
+  log(`維持費を更新：管理費 ${fmt(state.fees.mgmt)}／修繕 ${fmt(state.fees.repair)}／固定資産税 ${fmt(state.fees.taxYear)}`);
+  save(); render();
+});
+
+/* ---------- リマインド ---------- */
+function renderReminders(){
+  const today = new Date();
+  const items = [
+    { label:'金利確認（SBI新生銀行・6ヶ月ごと）', due:'2027-04-27', note:'変動金利の見直し・固定金利への切替検討' },
+    { label:'査定価格確認（12ヶ月ごと）', due:'2027-10-29', note:'机上査定で市況と基準額を更新' },
+    { label:'固定資産税 第3期 納付', due:'2026-12-31', note:'年税 134,000円' },
+    { label:'固定資産税 納税通知書 到着（6月）', due:'2027-06-01', note:'第1期分の確認' }
+  ];
+  document.getElementById('remindCard').innerHTML = items.map(it=>{
+    const d = new Date(it.due+'T00:00:00');
+    const days = Math.round((d - today)/86400000);
+    let cls='ok', txt='対応済み・余裕あり';
+    if(days<0){ cls='over'; txt=`期限切れ（${-days}日経過）`; }
+    else if(days<=31){ cls='due'; txt=`あと ${days} 日`; }
+    else txt = `あと ${days} 日`;
+    return `<div class="remind-item"><span class="r-label">${it.label}</span><span class="status ${cls}">${txt}</span><span class="note" style="margin:0">${it.note}（期日 ${it.due}）</span></div>`;
+  }).join('');
+}
+
+/* ---------- 物件情報・ログ ---------- */
+function renderPropInfo(curBal, monthlyHousing){
+  const p = state.property;
+  const totalBorrow = state.loans.reduce((s,l)=>s+l.principal,0);
+  const totalPay = state.loans.reduce((s,l)=>s+l.pay,0);
+  document.getElementById('propInfo').innerHTML = [
+    ['物件名', `${p.name} ${p.room}号室`], ['所在地', p.addr], ['築年月', p.built],
+    ['専有面積', p.area+'㎡'], ['間取り', p.layout], ['購入年', p.buyYear+'年'],
+    ['購入価格', fmt(p.buyPrice)+'円'], ['購入諸費用', fmt(p.buyCost)+'円'],
+    ['総取得費', fmt(p.buyPrice+p.buyCost)+'円'], ['借入合計', fmt(totalBorrow)+'円'],
+    ['現在月返済合計', fmt(totalPay)+'円'], ['月平均住居費', fmt(monthlyHousing)+'円']
+  ].map(x=>`<div><b>${x[0]}</b>${x[1]}</div>`).join('');
+}
+function renderLogs(){
+  document.getElementById('logList').innerHTML = state.logs.length===0
+    ? '<li>記録なし</li>'
+    : state.logs.map(l=>`<li><b>${new Date(l.ts).toLocaleString('ja-JP')}</b> — ${l.msg}</li>`).join('');
+}
+
+/* ---------- データ管理 ---------- */
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'home_equity_708_' + ymKey(new Date()).replace('-','') + '.json';
+  a.click(); URL.revokeObjectURL(a.href);
+  log('JSONをエクスポート'); save();
+});
+document.getElementById('fileImport').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => { try{
+      const d = JSON.parse(r.result);
+      state = Object.assign(structuredClone(DEFAULT_STATE), d);
+      log('JSONをインポート（他端末のデータを反映）');
+      save(); render();
+    }catch(err){ alert('JSONの読み込みに失敗しました：'+err.message); } };
+  r.readAsText(f);
+});
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  if(!confirm('すべてのデータを初期状態に戻します。よろしいですか？')) return;
+  state = structuredClone(DEFAULT_STATE); save(); render();
+});
+
+/* ---------- セグメント切替 ---------- */
+document.querySelectorAll('#periodSeg button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#periodSeg button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); curPeriod = Number(b.dataset.period); render();
+}));
+document.querySelectorAll('#scenarioSeg button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#scenarioSeg button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); curRate = Number(b.dataset.rate); render();
+}));
+
+render();
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
